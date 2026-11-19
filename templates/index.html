@@ -1,10 +1,67 @@
-<!doctype html><title>PhotoShare</title>
-<style>body{font-family:sans-serif;max-width:900px;margin:auto;padding:16px}
-.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
-.g img,.g video{width:100%;border-radius:8px}</style>
-<h1>PhotoShare</h1>
-<form method="post" action="/upload" enctype="multipart/form-data">
-<input type="file" name="file" accept="image/*,video/mp4" required><button>Upload</button></form>
-<div class="g">{% for i in items %}
-{% if i.video %}<video controls src="/media/{{ i.name.split('/')[-1] }}"></video>
-{% else %}<img src="/media/{{ i.name.split('/')[-1] }}">{% endif %}{% endfor %}</div>
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PhotoShare</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--text:#1b1f2a;--muted:#6b7280;--accent:#6c5ce7;--accent2:#a29bfe;--border:#e5e7eb}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1117;--card:#181b24;--text:#eef0f6;--muted:#9aa3b2;--border:#2a2f3c}}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:40px 20px 70px;text-align:center}
+header h1{margin:0;font-size:2.2rem;letter-spacing:-.5px}header p{margin:8px 0 0;opacity:.9}
+main{max-width:1000px;margin:-45px auto 40px;padding:0 16px}
+.drop{background:var(--card);border:2px dashed var(--accent2);border-radius:16px;padding:28px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.08);transition:.2s;cursor:pointer}
+.drop.over{border-color:var(--accent);transform:scale(1.01)}
+.drop b{font-size:1.05rem}.drop small{display:block;color:var(--muted);margin-top:6px}
+.drop input{display:none}
+.btn{margin-top:14px;background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 22px;font-size:1rem;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+#preview{margin-top:14px;max-height:160px;border-radius:10px;display:none}
+.top{display:flex;justify-content:space-between;align-items:center;margin:30px 4px 12px}
+.top h2{margin:0;font-size:1.2rem}.count{color:var(--muted);font-size:.9rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.tile{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;aspect-ratio:1;position:relative;cursor:zoom-in;transition:.2s}
+.tile:hover{transform:translateY(-4px);box-shadow:0 10px 22px rgba(0,0,0,.15)}
+.tile img,.tile video{width:100%;height:100%;object-fit:cover;display:block}
+.badge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.6);color:#fff;font-size:.75rem;padding:3px 8px;border-radius:20px}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted);padding:50px 10px;background:var(--card);border-radius:14px;border:1px solid var(--border)}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:9}
+#lb.on{display:flex}#lb img,#lb video{max-width:92vw;max-height:90vh;border-radius:10px}
+#lb span{position:absolute;top:16px;right:24px;color:#fff;font-size:2rem;cursor:pointer}
+footer{text-align:center;color:var(--muted);font-size:.85rem;padding-bottom:30px}
+</style></head><body>
+<header><h1>PhotoShare</h1><p>Upload and share your photos and videos in seconds</p></header>
+<main>
+<form id="f" method="post" action="/upload" enctype="multipart/form-data">
+<label class="drop" id="drop">
+<b>Drag and drop a file here, or click to browse</b>
+<small>JPG, PNG, GIF, WEBP or MP4, up to 25 MB</small>
+<input type="file" id="file" name="file" accept="image/*,video/mp4" required>
+<img id="preview" alt="Preview">
+<div><button class="btn" id="go" type="submit" disabled>Upload</button></div>
+</label></form>
+<div class="top"><h2>Gallery</h2><span class="count">{{ items|length }} item{{ '' if items|length == 1 else 's' }}</span></div>
+<div class="grid">
+{% for i in items %}
+<div class="tile" data-v="{{ 1 if i.video else 0 }}" data-src="/media/{{ i.name.split('/')[-1] }}">
+{% if i.video %}<video src="/media/{{ i.name.split('/')[-1] }}" muted preload="metadata"></video><span class="badge">Video</span>
+{% else %}<img loading="lazy" src="/media/{{ i.name.split('/')[-1] }}" alt="Photo">{% endif %}
+</div>
+{% else %}<div class="empty">No photos yet. Upload your first one above.</div>{% endfor %}
+</div></main>
+<footer>Built with Flask and deployed as a cloud PaaS app</footer>
+<div id="lb"><span>&times;</span><div id="box"></div></div>
+<script>
+const file=document.getElementById('file'),drop=document.getElementById('drop'),go=document.getElementById('go'),pv=document.getElementById('preview');
+function show(){const f=file.files[0];if(!f)return;go.disabled=false;
+ if(f.type.startsWith('image/')){pv.src=URL.createObjectURL(f);pv.style.display='block'}else{pv.style.display='none'}
+ drop.querySelector('b').textContent=f.name}
+file.addEventListener('change',show);
+['dragover','dragenter'].forEach(e=>drop.addEventListener(e,x=>{x.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(e=>drop.addEventListener(e,()=>drop.classList.remove('over')));
+drop.addEventListener('drop',x=>{x.preventDefault();file.files=x.dataTransfer.files;show()});
+document.getElementById('f').addEventListener('submit',()=>{go.textContent='Uploading…';go.disabled=true});
+const lb=document.getElementById('lb'),box=document.getElementById('box');
+document.querySelectorAll('.tile').forEach(t=>t.addEventListener('click',()=>{
+ box.innerHTML=t.dataset.v==='1'?`<video src="${t.dataset.src}" controls autoplay></video>`:`<img src="${t.dataset.src}">`;lb.classList.add('on')}));
+lb.addEventListener('click',e=>{if(e.target.id!=='box'&&e.target.tagName!=='IMG'&&e.target.tagName!=='VIDEO'){lb.classList.remove('on');box.innerHTML=''}});
+</script></body></html>
