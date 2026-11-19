@@ -1,0 +1,10 @@
+<!doctype html><title>PhotoShare</title>
+<style>body{font-family:sans-serif;max-width:900px;margin:auto;padding:16px}
+.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.g img,.g video{width:100%;border-radius:8px}</style>
+<h1>PhotoShare</h1>
+<form method="post" action="/upload" enctype="multipart/form-data">
+<input type="file" name="file" accept="image/*,video/mp4" required><button>Upload</button></form>
+<div class="g">{% for i in items %}
+{% if i.video %}<video controls src="/media/{{ i.name.split('/')[-1] }}"></video>
+{% else %}<img src="/media/{{ i.name.split('/')[-1] }}">{% endif %}{% endfor %}</div>
