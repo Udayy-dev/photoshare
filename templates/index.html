@@ -48,6 +48,8 @@ h1{font-family:"Bricolage Grotesque","DM Sans",system-ui,sans-serif;font-weight:
 #lb.on{display:flex}#box img,#box video{max-width:88vw;max-height:88vh;border-radius:3px;display:block}
 .nv{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:1.5rem;cursor:pointer}
 .nv:hover{background:rgba(255,255,255,.24)}#pr{left:18px}#nx{right:18px}
+#del{position:absolute;bottom:22px;left:50%;transform:translateX(-50%);background:var(--rec);color:#fff;border:0;border-radius:99px;padding:11px 26px;font:600 .95rem "DM Sans",system-ui,sans-serif;cursor:pointer}
+#del:disabled{opacity:.6;cursor:wait}
 #x{position:absolute;top:14px;right:20px;background:none;border:0;color:#fff;font-size:2.2rem;cursor:pointer;line-height:1}
 @media (max-width:820px){.top{grid-template-columns:1fr;gap:34px;padding-bottom:44px}.wrap{padding:0 18px}.lead{max-width:none}.nv{display:none}}
 @media (prefers-reduced-motion:reduce){.vf i{transition:none}}
@@ -72,7 +74,7 @@ h1{font-family:"Bricolage Grotesque","DM Sans",system-ui,sans-serif;font-weight:
 {% else %}<img loading="lazy" src="{{ u }}" alt="">{% endif %}</button>
 {% else %}<p class="empty">Nothing here yet. Add your first photo above.</p>{% endfor %}
 </div></div>
-<div id="lb"><button id="x" aria-label="Close">&times;</button><button class="nv" id="pr" aria-label="Previous">&#8249;</button><div id="box"></div><button class="nv" id="nx" aria-label="Next">&#8250;</button></div>
+<div id="lb"><button id="x" aria-label="Close">&times;</button><button class="nv" id="pr" aria-label="Previous">&#8249;</button><div id="box"></div><button id="del" type="button">Delete</button><button class="nv" id="nx" aria-label="Next">&#8250;</button></div>
 <script>
 const $=id=>document.getElementById(id),file=$('file'),vf=$('vf');
 vf.onclick=()=>file.click();
@@ -90,6 +92,10 @@ function open(n){cur=(n+tiles.length)%tiles.length;const t=tiles[cur];
 function close(){lb.classList.remove('on');box.innerHTML=''}
 tiles.forEach((t,n)=>t.onclick=()=>open(n));
 $('pr').onclick=e=>{e.stopPropagation();open(cur-1)};$('nx').onclick=e=>{e.stopPropagation();open(cur+1)};
+$('del').onclick=async()=>{if(!confirm('Delete this permanently?'))return;
+ const b=$('del');b.disabled=true;b.textContent='Deleting…';
+ const r=await fetch('/delete/'+tiles[cur].dataset.src.split('/').pop(),{method:'POST'});
+ if(r.ok)location.reload();else{b.disabled=false;b.textContent='Delete';alert('Could not delete. Try again.')}};
 $('x').onclick=close;lb.onclick=e=>{if(e.target===lb||e.target===box)close()};
 document.addEventListener('keydown',e=>{if(!lb.classList.contains('on'))return;
  if(e.key==='Escape')close();if(e.key==='ArrowRight')open(cur+1);if(e.key==='ArrowLeft')open(cur-1)});
